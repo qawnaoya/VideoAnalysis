@@ -1,0 +1,4 @@
+.env
+video_insights.json
+*.pyc
+__pycache__/
