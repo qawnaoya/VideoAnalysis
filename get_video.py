@@ -6,7 +6,11 @@ from VideoIndexerClient.Consts import Consts
 from VideoIndexerClient.VideoIndexerClient import VideoIndexerClient
 from pathlib import Path
 import json
-
+from azure.ai.vision.face import FaceClient
+from azure.ai.vision.face.models import (
+    FaceDetectionModel, FaceRecognitionModel,
+    FaceAttributeTypeDetection03, FaceAttributeTypeRecognition04
+)
 ApiVersion = '2024-01-01'
 ApiEndpoint = 'https://api.videoindexer.ai'
 AzureResourceManager = 'https://management.azure.com'
@@ -52,11 +56,18 @@ def main():
                         end_time = instance.get('end')
                         print(f"  Keyframe ID: {kf_id} | Start: {start_time} | End: {end_time}")
 
-                        # サムネイル画像を取得したい場合は、このID（kf_id）を使用します
+                        # サムネイル画像を取得したい場合は、thumbnailIdを使用します
+                        thumbnail_id = instance.get('thumbnailId') or kf.get('thumbnailId')
 
-                        thumbnail = client.get_thumbnail_async(file_video_id, kf_id)
+                        if thumbnail_id:
+                            # サムネイルの署名付きURLを表示
+                            thumbnail_url = client.get_thumbnail_url(file_video_id, thumbnail_id)
+                            print(f"    Thumbnail URL: {thumbnail_url}")
 
-                        print(f"    Thumbnail URL: {thumbnail}")
+                            # サムネイル画像をバイナリとして取得し、ファイルに保存する例
+                            thumbnail_bytes = client.get_thumbnail_async(file_video_id, thumbnail_id)
+
+
 
 if __name__ == "__main__":
     main()

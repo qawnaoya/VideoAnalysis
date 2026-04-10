@@ -265,6 +265,21 @@ class VideoIndexerClient:
 
         return response.content
 
+    def get_thumbnail_url(self, video_id:str, thumbnail_id:str) -> str:
+        '''
+        Gets the thumbnail URL for the video with the access token.
+
+        :param video_id: The video ID
+        :param thumbnail_id: The thumbnail ID
+        :return: The thumbnail URL
+        '''
+        self.get_account_async() # if account is not initialized, get it
+
+        url = f'{self.consts.ApiEndpoint}/{self.account["location"]}/Accounts/{self.account["properties"]["accountId"]}/' + \
+               f'Videos/{video_id}/Thumbnails/{thumbnail_id}?accessToken={self.vi_access_token}'
+        
+        return url
+
     def generate_prompt_content_async(self, video_id:str) -> None:
         '''
         Calls the promptContent API
