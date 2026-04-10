@@ -7,6 +7,7 @@ from VideoIndexerClient.VideoIndexerClient import VideoIndexerClient
 from pathlib import Path
 import json
 from azure.core.credentials import AzureKeyCredential
+from azure.core.exceptions import ClientAuthenticationError
 from azure.ai.vision.face import FaceClient
 from azure.ai.vision.face.models import (
     FaceDetectionModel, FaceRecognitionModel,
@@ -25,7 +26,17 @@ def main():
     # Face API credentials
     FACE_ENDPOINT = os.getenv("FACE_ENDPOINT")
     FACE_KEY = os.getenv("FACE_KEY")
-    print(f"FACE_KEY: {FACE_KEY}")
+
+    if FACE_ENDPOINT:
+        FACE_ENDPOINT = FACE_ENDPOINT.strip()
+    if FACE_KEY:
+        FACE_KEY = FACE_KEY.strip()
+
+    if FACE_KEY:
+        masked_key = FACE_KEY[:4] + "*" * (max(0, len(FACE_KEY) - 8)) + FACE_KEY[-4:] if len(FACE_KEY) > 8 else "****"
+        print(f"FACE_KEY: {masked_key}")
+    else:
+        print("FACE_KEY: None")
 
     if not FACE_ENDPOINT or not FACE_KEY:
         print("FACE_ENDPOINT or FACE_KEY is not set in environment variables.")
@@ -79,8 +90,9 @@ def main():
                             try:
                                 detected_faces = face_client.detect(
                                     image_content=thumbnail_bytes,
-                                    detection_model="detection_03",
-                                    recognition_model="recognition_04",                                    return_face_id=True,
+                                    detection_model=FaceDetectionModel.DETECTION03,
+                                    recognition_model=FaceRecognitionModel.RECOGNITION04,
+                                    return_face_id=True,
                                     return_face_landmarks=True
                                 )
 
@@ -103,6 +115,9 @@ def main():
                                             # 必要に応じて全ランドマークをループなどで表示可能
                                         else:
                                             print("      No landmarks detected for this face.")
+                            except ClientAuthenticationError as e:
+                                print(f"      Authentication Error: (401) Access denied. Please check if your FACE_KEY and FACE_ENDPOINT are correct and belong to the same region.")
+                                print(f"      Details: {e}")
                             except Exception as e:
                                 print(f"      Error detecting faces: {e}")
                                 print(e.__class__.__name__, e)
