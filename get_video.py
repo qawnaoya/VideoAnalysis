@@ -53,5 +53,10 @@ def main():
                         print(f"  Keyframe ID: {kf_id} | Start: {start_time} | End: {end_time}")
 
                         # サムネイル画像を取得したい場合は、このID（kf_id）を使用します
+
+                        thumbnail = client.get_thumbnail_async(file_video_id, kf_id)
+
+                        print(f"    Thumbnail URL: {thumbnail}")
+
 if __name__ == "__main__":
     main()

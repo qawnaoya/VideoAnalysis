@@ -240,6 +240,31 @@ class VideoIndexerClient:
         print(f'Here are the search results: \n{search_result}')
         return search_result
 
+    def get_thumbnail_async(self, video_id:str, thumbnail_id:str) -> bytes:
+        '''
+        Gets the thumbnail for the video. Calls the getThumbnail API
+        (https://api-portal.videoindexer.ai/api-details#api=Operations&operation=Get-Thumbnail)
+        Returns the thumbnail bytes, otherwise throws an exception
+
+        :param video_id: The video ID
+        :param thumbnail_id: The thumbnail ID
+        :return: The thumbnail bytes
+        '''
+        self.get_account_async() # if account is not initialized, get it
+
+        url = f'{self.consts.ApiEndpoint}/{self.account["location"]}/Accounts/{self.account["properties"]["accountId"]}/' + \
+               f'Videos/{video_id}/Thumbnails/{thumbnail_id}'
+
+        params = {
+            'accessToken': self.vi_access_token
+        }
+
+        response = requests.get(url, params=params)
+
+        response.raise_for_status()
+
+        return response.content
+
     def generate_prompt_content_async(self, video_id:str) -> None:
         '''
         Calls the promptContent API
