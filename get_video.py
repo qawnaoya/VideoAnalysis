@@ -25,6 +25,7 @@ def main():
     # Face API credentials
     FACE_ENDPOINT = os.getenv("FACE_ENDPOINT")
     FACE_KEY = os.getenv("FACE_KEY")
+    print(f"FACE_KEY: {FACE_KEY}")
 
     if not FACE_ENDPOINT or not FACE_KEY:
         print("FACE_ENDPOINT or FACE_KEY is not set in environment variables.")
@@ -41,7 +42,7 @@ def main():
     client.authenticate_async(consts)
 
     # Initialize FaceClient
-    face_client = FaceClient(FACE_ENDPOINT, AzureKeyCredential(FACE_KEY))
+    face_client = FaceClient(endpoint=FACE_ENDPOINT, credential=AzureKeyCredential(FACE_KEY))
 
     insights = client.get_video_async(file_video_id)
 
