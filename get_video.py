@@ -7,6 +7,7 @@ from VideoIndexerClient.VideoIndexerClient import VideoIndexerClient
 from pathlib import Path
 import json
 from azure.core.credentials import AzureKeyCredential
+from azure.identity import DefaultAzureCredential # 追加
 from azure.ai.vision.face import FaceClient
 from azure.ai.vision.face.models import (
     FaceDetectionModel, FaceRecognitionModel,
@@ -24,12 +25,6 @@ def main():
 
     # Face API credentials
     FACE_ENDPOINT = os.getenv("FACE_ENDPOINT")
-    FACE_KEY = os.getenv("FACE_KEY")
-    print(f"FACE_KEY: {FACE_KEY}")
-
-    if not FACE_ENDPOINT or not FACE_KEY:
-        print("FACE_ENDPOINT or FACE_KEY is not set in environment variables.")
-        return
 
     consts = Consts(ApiVersion, ApiEndpoint, AzureResourceManager, ACCOUNT_NAME, RESOURCE_GROUP, SUBSCRIPTION_ID)
 
@@ -42,8 +37,10 @@ def main():
     client.authenticate_async(consts)
 
     # Initialize FaceClient
-    face_client = FaceClient(endpoint=FACE_ENDPOINT, credential=AzureKeyCredential(FACE_KEY))
-
+    face_client = FaceClient(
+        endpoint=FACE_ENDPOINT.strip(),
+        credential=DefaultAzureCredential()
+    )
     insights = client.get_video_async(file_video_id)
 
     # キーフレームは 'videos' リスト内の各ビデオの 'insights' -> 'shots' の中に含まれます
