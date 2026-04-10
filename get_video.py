@@ -6,6 +6,7 @@ from VideoIndexerClient.Consts import Consts
 from VideoIndexerClient.VideoIndexerClient import VideoIndexerClient
 from pathlib import Path
 import json
+from azure.core.credentials import AzureKeyCredential
 from azure.ai.vision.face import FaceClient
 from azure.ai.vision.face.models import (
     FaceDetectionModel, FaceRecognitionModel,
@@ -20,11 +21,18 @@ def main():
     ACCOUNT_NAME = os.getenv("AccountName")
     RESOURCE_GROUP = os.getenv("ResourceGroup")
     SUBSCRIPTION_ID = os.getenv("SubscriptionId")
+
+    # Face API credentials
+    FACE_ENDPOINT = os.getenv("FACE_ENDPOINT")
+    FACE_KEY = os.getenv("FACE_KEY")
+
+    if not FACE_ENDPOINT or not FACE_KEY:
+        print("FACE_ENDPOINT or FACE_KEY is not set in environment variables.")
+        return
+
     consts = Consts(ApiVersion, ApiEndpoint, AzureResourceManager, ACCOUNT_NAME, RESOURCE_GROUP, SUBSCRIPTION_ID)
 
     file_video_id = 'f5510yhove'
-
-    # Authenticate
 
     # create Video Indexer Client
     client = VideoIndexerClient()
@@ -32,6 +40,8 @@ def main():
     # Get access tokens (arm and Video Indexer account)
     client.authenticate_async(consts)
 
+    # Initialize FaceClient
+    face_client = FaceClient(FACE_ENDPOINT, AzureKeyCredential(FACE_KEY))
 
     insights = client.get_video_async(file_video_id)
 
@@ -60,14 +70,41 @@ def main():
                         thumbnail_id = instance.get('thumbnailId') or kf.get('thumbnailId')
 
                         if thumbnail_id:
-                            # サムネイルの署名付きURLを表示
-                            thumbnail_url = client.get_thumbnail_url(file_video_id, thumbnail_id)
-                            print(f"    Thumbnail URL: {thumbnail_url}")
-
-                            # サムネイル画像をバイナリとして取得し、ファイルに保存する例
+                            # サムネイル画像をバイナリとして取得
                             thumbnail_bytes = client.get_thumbnail_async(file_video_id, thumbnail_id)
 
+                            # Face APIで顔検出とランドマーク取得
+                            print(f"    Detecting faces in thumbnail {thumbnail_id}...")
+                            try:
+                                detected_faces = face_client.detect(
+                                    image_content=thumbnail_bytes,
+                                    detection_model="detection_03",
+                                    recognition_model="recognition_04",                                    return_face_id=True,
+                                    return_face_landmarks=True
+                                )
 
+                                if not detected_faces:
+                                    print("      No faces detected.")
+                                else:
+                                    for face in detected_faces:
+                                        print(f"      Face ID: {face.face_id}")
+                                        print(f"      Face Rectangle: {face.face_rectangle}")
+                                        if face.face_landmarks:
+                                            # ランドマーク情報を表示
+                                            print(f"      Face Landmarks:")
+                                            landmarks = face.face_landmarks
+                                            # 主要なランドマークを表示する例
+                                            print(f"        Pupil Left: {landmarks.pupil_left}")
+                                            print(f"        Pupil Right: {landmarks.pupil_right}")
+                                            print(f"        Nose Tip: {landmarks.nose_tip}")
+                                            print(f"        Mouth Left: {landmarks.mouth_left}")
+                                            print(f"        Mouth Right: {landmarks.mouth_right}")
+                                            # 必要に応じて全ランドマークをループなどで表示可能
+                                        else:
+                                            print("      No landmarks detected for this face.")
+                            except Exception as e:
+                                print(f"      Error detecting faces: {e}")
+                                print(e.__class__.__name__, e)
 
 if __name__ == "__main__":
     main()
