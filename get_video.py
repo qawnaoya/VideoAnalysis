@@ -76,17 +76,23 @@ def main():
                             try:
                                 detected_faces = face_client.detect(
                                     image_content=thumbnail_bytes,
-                                    detection_model="detection_03",
-                                    recognition_model="recognition_04",                                    return_face_id=True,
-                                    return_face_landmarks=True
+                                    detection_model="detection_01", # Head Pose取得には 01 が安定しています
+                                    recognition_model="recognition_04",
+                                    return_face_id=True,
+                                    return_face_landmarks=True,     # 眉のために必要
+                                    return_face_attributes=["headPose"] # Head Poseを指定
                                 )
-
                                 if not detected_faces:
                                     print("      No faces detected.")
                                 else:
                                     for face in detected_faces:
                                         print(f"      Face ID: {face.face_id}")
                                         print(f"      Face Rectangle: {face.face_rectangle}")
+                                        # 1. Head Pose (ピッチ, ロール, ヨー)
+                                        if face.face_attributes and face.face_attributes.head_pose:
+                                            hp = face.face_attributes.head_pose
+                                            print(f"      Head Pose: Pitch={hp.pitch}, Roll={hp.roll}, Yaw={hp.yaw}")
+
                                         if face.face_landmarks:
                                             # ランドマーク情報を表示
                                             print(f"      Face Landmarks:")
@@ -97,6 +103,8 @@ def main():
                                             print(f"        Nose Tip: {landmarks.nose_tip}")
                                             print(f"        Mouth Left: {landmarks.mouth_left}")
                                             print(f"        Mouth Right: {landmarks.mouth_right}")
+                                            print(f"        Eyebrow Left: Outer({landmarks.eyebrow_left_outer}), Inner({landmarks.eyebrow_left_inner})")
+                                            print(f"        Eyebrow Right: Inner({landmarks.eyebrow_right_inner}), Outer({landmarks.eyebrow_right_outer})")
                                             # 必要に応じて全ランドマークをループなどで表示可能
                                         else:
                                             print("      No landmarks detected for this face.")
