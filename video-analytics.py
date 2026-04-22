@@ -18,6 +18,15 @@ ApiVersion = '2024-01-01'
 ApiEndpoint = 'https://api.videoindexer.ai'
 AzureResourceManager = 'https://management.azure.com'
 
+def timestamp_to_seconds(timestamp):
+    # "0:00:00.404" -> ["0", "00", "00.404"]
+    parts = timestamp.split(':')
+    hours = float(parts[0])
+    minutes = float(parts[1])
+    seconds = float(parts[2])
+    
+    return hours * 3600 + minutes * 60 + seconds
+
 def main():
     load_dotenv()
     ACCOUNT_NAME = os.getenv("AccountName")
@@ -114,17 +123,38 @@ def main():
     if len(keyframe_info_list) > 1:
         start_keyframe = keyframe_info_list[0]
         start_degree_info = degree_info_list[0]
+        start_time = timestamp_to_seconds(start_keyframe.get('start_time'))
 
         for i in range(1, len(keyframe_info_list)):
+            current_time = timestamp_to_seconds(keyframe_info_list[i].get('start_time'))
+            print(f"\nComparing Keyframe at {start_time} with Keyframe at {current_time}...")
+            time_diff = current_time - start_time
+            print(f"  Time Difference: {time_diff} seconds")
+
             current_keyframe = keyframe_info_list[i]
             current_degree_info = degree_info_list[i]
 
             print(f"Comparing Keyframe {i-1} with Keyframe {i}...")
 
-            print(f"  Mouth Degree Difference: {math.fabs(start_degree_info['mouth_degree'] - current_degree_info['mouth_degree'])}")
-            print(f"  Pupil Degree Difference: {math.fabs(start_degree_info['pupil_degree'] - current_degree_info['pupil_degree'])}")
-            print(f"  Eyebrow Left Degree Difference: {math.fabs(start_degree_info['eyebrow_left_degree'] - current_degree_info['eyebrow_left_degree'])}")
-            print(f"  Eyebrow Right Degree Difference: {math.fabs(start_degree_info['eyebrow_right_degree'] - current_degree_info['eyebrow_right_degree'])}")
+            mouth_degree_diff = math.fabs(start_degree_info['mouth_degree'] - current_degree_info['mouth_degree']) if start_degree_info['mouth_degree'] is not None and current_degree_info['mouth_degree'] is not None else None
+            pupil_degree_diff = math.fabs(start_degree_info['pupil_degree'] - current_degree_info['pupil_degree']) if start_degree_info['pupil_degree'] is not None and current_degree_info['pupil_degree'] is not None else None
+            eyebrow_left_degree_diff = math.fabs(start_degree_info['eyebrow_left_degree'] - current_degree_info['eyebrow_left_degree']) if start_degree_info['eyebrow_left_degree'] is not None and current_degree_info['eyebrow_left_degree'] is not None else None
+            eyebrow_right_degree_diff = math.fabs(start_degree_info['eyebrow_right_degree'] - current_degree_info['eyebrow_right_degree']) if start_degree_info['eyebrow_right_degree'] is not None and current_degree_info['eyebrow_right_degree'] is not None else None
+
+            print(f"  Mouth Degree Difference: {mouth_degree_diff}")
+            print(f"  Pupil Degree Difference: {pupil_degree_diff}")
+            print(f"  Eyebrow Left Degree Difference: {eyebrow_left_degree_diff}")
+            print(f"  Eyebrow Right Degree Difference: {eyebrow_right_degree_diff}")
+
+            mouth_degree_diff_velo = mouth_degree_diff / time_diff if mouth_degree_diff is not None else None
+            pupil_degree_diff_velo = pupil_degree_diff / time_diff if pupil_degree_diff is not None else None
+            eyebrow_left_degree_diff_velo = eyebrow_left_degree_diff / time_diff if eyebrow_left_degree_diff is not None else None
+            eyebrow_right_degree_diff_velo = eyebrow_right_degree_diff / time_diff if eyebrow_right_degree_diff is not None else None
+
+            print(f"  Mouth Degree Difference velocity: {mouth_degree_diff_velo}")
+            print(f"  Pupil Degree Difference velocity: {pupil_degree_diff_velo}")
+            print(f"  Eyebrow Left Degree Difference velocity: {eyebrow_left_degree_diff_velo}")
+            print(f"  Eyebrow Right Degree Difference velocity: {eyebrow_right_degree_diff_velo}")
 
             # ここでは単純にピッチ、ロール、ヨーの差を計算してみます
             if 'pose' in start_keyframe and 'pose' in current_keyframe:
@@ -170,6 +200,7 @@ def main():
 
             # 次の比較のために現在のキーフレームを基準にします
             start_keyframe = current_keyframe
+            start_time = current_time
 
 def process_key_frames(file_video_id, client, face_client, kf):
     kf_id = kf.get('id')
